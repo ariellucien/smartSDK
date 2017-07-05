@@ -1,0 +1,136 @@
+'Routing Pattern
+@startuml
+  skinparam componentStyle uml2
+
+    !define ICONURL https://raw.githubusercontent.com/smartsdk/architecture-diagrams/smartsdk-template/dist
+    !includeurl ICONURL/common.puml
+    !includeurl ICONURL/fiware.puml
+    !includeurl ICONURL/smartsdk.puml
+
+    skinparam shadowing false
+    skinparam rectangleBorderColor white
+    rectangle "<font color=white>top" as top{
+      SMARTSDK(fesca, "FrontEnd Smart City Application", component)
+      SMARTSDK(besca, "BackEnd Smart City Application", component)
+      package "Route service \n Enablement" as rse{
+        rectangle "<font color=white>" as rechid{
+          interface "OSM" as osm
+          interface "GTFS Data" as gtfsd
+          gtfsd -[hidden]down- osm
+        }      
+        rectangle "<font color=white>" as rechid2{
+          SMARTSDK(re, "Routing engine", component)
+          SMARTSDK(protp, "Public router (OTP)", component)
+          protp -[hidden]down- re
+        }        
+        
+        SMARTSDK(rw, "Routing wrapper", component)
+        
+        rw -[hidden]left- protp
+        protp -[hidden]left- gtfsd
+        re -[hidden]left- osm
+
+        rw - protp
+        rw - re
+        protp - gtfsd
+        protp - osm
+        osm - re
+      }
+      'fesca -[hidden]right- besca
+      'besca -[hidden]left- rse
+    }
+
+      rectangle "<font color=white>mid" as mid {
+        FIWARE(cbo, "Context Broker \n -Orion", component)
+        '[Context Broker \n -Orion] as cbo
+        package "IoT Backed" as iotb{
+          FIWARE(iotbr,"IoT Broker",component)
+          FIWARE(iotd,"IoT Discovery",component)
+          FIWARE(bedmi,"Backend device management \n IDAS",component)    
+        }
+        
+        interface "COAP" as coap 
+        cloud "Cloudino \n cloud" as ccloudino   
+        interface "MQTT" as mqtt
+        interface "LWM2M" as lwm2m      
+        
+        'cbo -[hidden]down- iotb
+        
+        'iotb -[hidden]down- lwm2m
+        'mid -[hidden]down- mqtt
+        ccloudino -- coap
+        ccloudino -- mqtt
+      }
+
+      'rectangle "<font color=white>mid" as rdown {
+        package "SDK library for NGSI" as sdklfngsi{
+          SMARTSDK(sensors,"Mobile device \n (location, accelerometer sensors, \n gyroscope)",component)          
+        }
+        package "IoT Device" as piotd{
+          SMARTSDK(cloudino, "Cloudino", component)
+          '[Cloudino] as cloudino
+          '[Humidity sensor] as hs
+          '[Temperature sensor] as ts
+          [GPS sensor (in progress)] as gpssdev
+          cloudino -- gpssdev
+        }
+      '}
+      'cambiar orden
+    'rectangle "<font color=white>mid" as hid3 {  
+      FIWARE(imk, "Identity Manager \n (Keyrock)", component)  
+      interface "Oauth 2" as oau2
+    '}
+
+    'besca -[hidden]down- hid3
+
+    interface "NGSI" as ngsi  
+
+      
+      package "Cosmos" as ctbd{
+        FIWARE(cygnus,"Cygnus",component)
+        FIWARE(bdan,"Big Data Analysis",component)
+        FIWARE(sthc,"STH commet",component)
+        cygnus -- sthc
+        cygnus -- bdan
+      }
+
+      package "IoT Mobile Device" as iotmd{
+          SMARTSDK(spot,"Smart Spot",component)
+          [Accelerometer] as tahs
+          [GPS sensor \n (in progress)] as gpssip
+          spot -- gpssip
+          spot -- tahs
+      }
+
+    fesca -- oau2
+    imk -- oau2
+
+    fesca -- ngsi
+    besca -- ngsi
+    cbo ----- ngsi
+    iotd -- ngsi
+    cygnus --ngsi
+    sensors -- ngsi
+    cloudino -- ngsi
+    bedmi -- ngsi
+
+    bedmi -- coap
+    bedmi -- mqtt
+    bedmi -- lwm2m
+
+    spot -- lwm2m
+    ngsi ----- cloudino
+    ccloudino -- cloudino
+    rw ----- ngsi 
+    
+    'agrupamiento de componentes
+    lwm2m -[hidden]down- iotmd
+    iotmd -[hidden]up- iotd
+    sdklfngsi -[hidden]up- iotmd
+    oau2 -[hidden]down- mid
+    iotmd -[hidden]up- iotd
+    sdklfngsi -[hidden]down- iotd
+
+    rse -[hidden]down- mid    
+
+@enduml
